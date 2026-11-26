@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+      - name: Install extra shells
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends busybox fish ksh mksh tcsh zsh
+      - name: Run tests
+        run: python tests/run_tests.py bash sh dash busybox zsh ksh mksh tcsh fish pwsh python perl ruby shebang
+
+  macos:
+    name: macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+      - name: Install fish
+        run: brew install fish
+      # bash, sh, dash, zsh, ksh and tcsh ship with macOS; pwsh, perl and ruby with the runner image.
+      - name: Run tests
+        run: python tests/run_tests.py bash sh dash zsh ksh tcsh fish pwsh python perl ruby shebang
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+      - name: Run tests (native interpreters)
+        shell: pwsh
+        run: python tests/run_tests.py pwsh powershell python perl ruby
+      # Put Git's /usr/bin first so "bash" cannot resolve to the WSL launcher in System32.
+      - name: Run tests (Git Bash)
+        shell: bash
+        run: PATH="/usr/bin:$PATH" python tests/run_tests.py bash sh
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MSYS
+          update: false
+          install: dash fish python tcsh zsh
+      - name: Run tests (MSYS2)
+        shell: msys2 {0}
+        run: python tests/run_tests.py bash sh dash zsh tcsh fish python

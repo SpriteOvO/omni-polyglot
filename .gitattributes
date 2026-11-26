@@ -1,0 +1,2 @@
+# Every interpreter here needs LF line endings; CRLF breaks the sh family.
+* text=auto eol=lf
